@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import pickle as pkl
 import requests
+import gzip
 
 @st.cache_resource
 def load_models():
@@ -13,7 +14,8 @@ def load_models():
 @st.cache_data
 def load_data():
     X = pkl.load(open('X.pkl', 'rb'))
-    Y = pkl.load(open('Y.pkl', 'rb'))
+    with gzip.open('Y.pkl.gz', 'rb') as f:
+        Y = pkl.load(f)
     anime_names = pkl.load(open('anime_names.pkl', 'rb'))
     anime_id_df = pkl.load(open('anime_id_df.pkl', 'rb'))
     return X, Y, anime_names, anime_id_df
@@ -32,10 +34,10 @@ def fetch_poster(anime_id):
             mal_url = data['data']['url']
             return image_url, mal_url
         else:
-            return "https://wallpapers.com/images/high/anime-characters-1080-x-1920-picture-3ztfmcx0w79qi8p5.webp","https://myanimelist.net/"
+            return "https://wallpapers.com/images/high/anime-characters-1080-x-1920-picture-3ztfmcx0w79qi8p5.webp", "https://myanimelist.net/"
     except Exception as e:
         st.error(f"Error fetching poster: {e}")
-        return "https://wallpapers.com/images/high/anime-characters-1080-x-1920-picture-3ztfmcx0w79qi8p5.webp","https://myanimelist.net/"
+        return "https://wallpapers.com/images/high/anime-characters-1080-x-1920-picture-3ztfmcx0w79qi8p5.webp", "https://myanimelist.net/"
 
 def collaborative_recommend(anime):
     anime_id = anime_names[anime_names.Name == anime]['anime_id'].values[0]
@@ -62,17 +64,17 @@ def content_recommend(anime_name):
     return animes, anime_ids
 
 st.title('What anime to watch next?')
-st.write('Anime recommendation system : collaborative filtering + content based filtering.')
+st.write('Anime recommendation system: collaborative filtering + content-based filtering.')
 st.caption('*-by Md Faisal.*')
 
 st.write('')
 st.write('')
 st.write('')
-anime_name = st.selectbox('Choose your favourite anime.', anime_names['Name'],placeholder='try doraemon,naruto,ninja hattori etc')
+anime_name = st.selectbox('Choose your favourite anime.', anime_names['Name'], placeholder='try doraemon, naruto, ninja hattori, etc.')
 
 if st.button('Recommend'):
     if anime_name:
-        st.write("Content Based Recommendations : ")
+        st.write("Content Based Recommendations: ")
         similar_animes, similar_anime_ids = content_recommend(anime_name)
         cols = st.columns(5)
         for col, anime, anime_id in zip(cols, similar_animes, similar_anime_ids):
@@ -83,7 +85,7 @@ if st.button('Recommend'):
                     st.markdown(f"[![{anime}]({image_url})]({mal_url})")
         st.write('')
         st.divider()
-        st.write("Users Also Liked (Collaborative Recommendations) : ")
+        st.write("Users Also Liked (Collaborative Recommendations): ")
         similar_animes, similar_anime_ids = collaborative_recommend(anime_name)
         cols = st.columns(5)
         for col, anime, anime_id in zip(cols, similar_animes, similar_anime_ids):
